@@ -1,0 +1,100 @@
+version: "3.8"
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: typeracer-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-typeracer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-typeracer_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-typeracer}
+    volumes:
+      - ./provision/postgres:/var/lib/postgresql/data
+    networks:
+      - typeracer-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-typeracer}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for session/room state
+  redis:
+    image: redis:7-alpine
+    container_name: typeracer-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - ./provision/redis:/data
+    networks:
+      - typeracer-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API + WebSocket Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: typeracer-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-typeracer}:${POSTGRES_PASSWORD:-typeracer_secret}@postgres:5432/${POSTGRES_DB:-typeracer}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_change_in_production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://typeracer.fhijazi.com}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - typeracer-internal
+      - public
+    labels:
+      - "traefik.enable=true"
+      # Define the service once
+      - "traefik.http.services.typeracer-backend.loadbalancer.server.port=3001"
+      # API routes (higher priority)
+      - "traefik.http.routers.typeracer-api.rule=Host(`typeracer.fhijazi.com`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.typeracer-api.entrypoints=web"
+      - "traefik.http.routers.typeracer-api.service=typeracer-backend"
+      - "traefik.http.routers.typeracer-api.priority=100"
+      # WebSocket routes (higher priority)
+      - "traefik.http.routers.typeracer-ws.rule=Host(`typeracer.fhijazi.com`) && PathPrefix(`/socket.io`)"
+      - "traefik.http.routers.typeracer-ws.entrypoints=web"
+      - "traefik.http.routers.typeracer-ws.service=typeracer-backend"
+      - "traefik.http.routers.typeracer-ws.priority=100"
+
+  # Frontend (React/Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-https://typeracer.fhijazi.com}
+        VITE_WS_URL: ${VITE_WS_URL:-wss://typeracer.fhijazi.com}
+    container_name: typeracer-frontend
+    restart: unless-stopped
+    networks:
+      - public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.typeracer.rule=Host(`typeracer.fhijazi.com`) || Host(`typeracer-dev.fhijazi.com`)"
+      - "traefik.http.routers.typeracer.entrypoints=web"
+      - "traefik.http.services.typeracer.loadbalancer.server.port=80"
+      - "traefik.http.routers.typeracer.middlewares=common-headers@file"
+      - "traefik.http.routers.typeracer.priority=1"
+
+networks:
+  typeracer-internal:
+    driver: bridge
+  public:
+    external: true

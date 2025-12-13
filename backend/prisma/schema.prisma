@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String?   @unique
+  passwordHash  String?
+  isGuest       Boolean   @default(false)
+  avatarColor   String    @default("#3B82F6")
+  carColor      String    @default("#EF4444")
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  raceTracks    RaceTrack[]
+  raceResults   RaceResult[]
+  hostedRooms   Room[]     @relation("RoomHost")
+
+  @@index([username])
+}
+
+model RaceTrack {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  text        String    @db.Text
+  language    String    @default("en")
+  difficulty  String    @default("medium") // easy, medium, hard
+  isPublic    Boolean   @default(true)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  creatorId   String?
+  creator     User?     @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+  races       Race[]
+
+  @@index([language])
+  @@index([isPublic])
+}
+
+model Room {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  name        String
+  maxPlayers  Int       @default(8)
+  isPrivate   Boolean   @default(false)
+  status      String    @default("waiting") // waiting, countdown, racing, finished
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  hostId      String?
+  host        User?     @relation("RoomHost", fields: [hostId], references: [id], onDelete: SetNull)
+  races       Race[]
+
+  @@index([code])
+  @@index([status])
+}
+
+model Race {
+  id          String    @id @default(cuid())
+  startedAt   DateTime?
+  finishedAt  DateTime?
+
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  roomId      String
+  room        Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  trackId     String
+  track       RaceTrack @relation(fields: [trackId], references: [id])
+  results     RaceResult[]
+
+  @@index([roomId])
+}
+
+model RaceResult {
+  id          String    @id @default(cuid())
+  wpm         Float
+  accuracy    Float
+  position    Int
+  finishTime  Int       // milliseconds
+
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  raceId      String
+  race        Race      @relation(fields: [raceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([raceId, userId])
+  @@index([userId])
+  @@index([wpm])
+}

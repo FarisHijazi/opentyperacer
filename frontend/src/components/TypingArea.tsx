@@ -56,39 +56,41 @@ export default function TypingArea({
 
     const newInput = e.target.value;
 
+    // Don't allow typing past the text length
+    if (newInput.length > text.length) return;
+
     // Start timer on first input
     if (!startTime && newInput.length > 0) {
       setStartTime(Date.now());
     }
 
-    // Check for errors
+    // Check for errors on new characters
     const prevLength = input.length;
     const newLength = newInput.length;
 
     if (newLength > prevLength) {
-      // Character added
-      setTotalTyped((t) => t + 1);
-      const expectedChar = text[prevLength];
-      const typedChar = newInput[newLength - 1];
-      if (typedChar !== expectedChar) {
-        setErrors((e) => e + 1);
+      // Characters added
+      for (let i = prevLength; i < newLength; i++) {
+        setTotalTyped((t) => t + 1);
+        if (newInput[i] !== text[i]) {
+          setErrors((e) => e + 1);
+        }
       }
     }
 
-    // Only allow correct characters (no backspace allowed for incorrect chars)
-    let validInput = '';
-    for (let i = 0; i < newInput.length && i < text.length; i++) {
+    // Allow all input (including errors)
+    setInput(newInput);
+
+    // Calculate correct characters for progress
+    let correctChars = 0;
+    for (let i = 0; i < newInput.length; i++) {
       if (newInput[i] === text[i]) {
-        validInput += newInput[i];
-      } else {
-        break;
+        correctChars++;
       }
     }
 
-    setInput(validInput);
-
-    // Calculate stats
-    const progress = (validInput.length / text.length) * 100;
+    // Progress is based on total position, not just correct chars
+    const progress = (newInput.length / text.length) * 100;
     const wpm = calculateWPM();
     const accuracy = calculateAccuracy();
 
@@ -102,8 +104,8 @@ export default function TypingArea({
       onProgress(progress, wpm, accuracy);
     }
 
-    // Check if finished
-    if (validInput === text) {
+    // Check if finished (must type all characters, including fixing errors via backspace)
+    if (newInput === text) {
       setFinished(true);
       const finalWpm = calculateWPM();
       const finalAccuracy = calculateAccuracy();
@@ -117,7 +119,12 @@ export default function TypingArea({
     return chars.map((char, index) => {
       let className = 'typing-pending';
       if (index < input.length) {
-        className = 'typing-correct';
+        // Check if this character was typed correctly
+        if (input[index] === text[index]) {
+          className = 'typing-correct';
+        } else {
+          className = 'typing-error';
+        }
       } else if (index === input.length) {
         className = 'typing-current';
       }

@@ -163,6 +163,16 @@ export default function Room() {
     setShowTrackSelector(false);
   };
 
+  // Auto-select default track for host when joining
+  useEffect(() => {
+    const hostUserId = game.players[0]?.odefinitionUserId;
+    const currentUserIsHost = hostUserId === user?.id;
+    if (currentUserIsHost && game.status === 'waiting' && !game.trackId && game.players.length > 0) {
+      // Select "The Art of Programming" as default track
+      socket.emit('select-track', { trackId: 'the-art-of-programming' });
+    }
+  }, [game.players, game.status, game.trackId, user?.id]);
+
   const handleStartRace = () => {
     socket.emit('start-race');
   };

@@ -11,7 +11,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default_secret';
 // Validation schema
 const createRoomSchema = z.object({
   name: z.string().min(1).max(50),
-  maxPlayers: z.number().min(2).max(20).default(8),
+  maxPlayers: z.number().min(2).max(1000).nullable().default(null), // null = unlimited
   isPrivate: z.boolean().default(false),
 });
 
@@ -54,7 +54,7 @@ roomsRouter.get('/', async (req, res) => {
 roomsRouter.get('/:code', async (req, res) => {
   try {
     const room = await prisma.room.findUnique({
-      where: { code: req.params.code.toUpperCase() },
+      where: { code: req.params.code },
       include: {
         host: {
           select: { id: true, username: true, avatarColor: true },
@@ -99,7 +99,8 @@ roomsRouter.post('/', async (req, res) => {
     }
 
     const data = createRoomSchema.parse(req.body);
-    const code = nanoid(6).toUpperCase();
+    // Generate 6-digit numeric room code
+    const code = String(Math.floor(100000 + Math.random() * 900000));
 
     const room = await prisma.room.create({
       data: {
@@ -133,7 +134,7 @@ roomsRouter.post('/', async (req, res) => {
 roomsRouter.get('/:code/leaderboard', async (req, res) => {
   try {
     const room = await prisma.room.findUnique({
-      where: { code: req.params.code.toUpperCase() },
+      where: { code: req.params.code },
     });
 
     if (!room) {

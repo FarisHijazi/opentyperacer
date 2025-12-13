@@ -6,7 +6,7 @@ import Header from '../components/Header';
 export default function CreateRoom() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [maxPlayers, setMaxPlayers] = useState(8);
+  const [maxPlayers, setMaxPlayers] = useState<number | null>(null); // null = unlimited (default)
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,11 +64,12 @@ export default function CreateRoom() {
             <div>
               <label className="block text-sm font-medium mb-2">Max Players</label>
               <select
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(Number(e.target.value))}
+                value={maxPlayers === null ? 'unlimited' : maxPlayers}
+                onChange={(e) => setMaxPlayers(e.target.value === 'unlimited' ? null : Number(e.target.value))}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
               >
-                {[2, 4, 6, 8, 10, 12, 16, 20].map((n) => (
+                <option value="unlimited">Unlimited (default)</option>
+                {[2, 4, 6, 8, 10, 12, 16, 20, 50, 100].map((n) => (
                   <option key={n} value={n}>
                     {n} players
                   </option>

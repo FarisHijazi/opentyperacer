@@ -60,7 +60,7 @@ export function setupSocketHandlers(io: Server) {
     // Join room
     socket.on('join-room', async (data: { roomCode: string; user?: any }) => {
       try {
-        const roomCode = data.roomCode.toUpperCase();
+        const roomCode = data.roomCode;
 
         // Use provided user data or require authentication
         if (data.user) {
@@ -98,7 +98,8 @@ export function setupSocketHandlers(io: Server) {
           rooms.set(roomCode, roomState);
         }
 
-        if (roomState.players.size >= dbRoom.maxPlayers) {
+        // Check max players (null means unlimited)
+        if (dbRoom.maxPlayers !== null && roomState.players.size >= dbRoom.maxPlayers) {
           socket.emit('error', { message: 'Room is full' });
           return;
         }

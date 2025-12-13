@@ -41,8 +41,10 @@ body {
   color: #22c55e;
 }
 
-.typing-incorrect {
+.typing-incorrect,
+.typing-error {
   color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.2);
   text-decoration: underline;
   text-decoration-color: #ef4444;
 }

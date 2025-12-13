@@ -39,6 +39,13 @@ const defaultTracks = [
     difficulty: "medium",
     isPublic: true,
   },
+  {
+    name: "The Art of Programming",
+    text: "Computer programming is an art, because it applies accumulated knowledge to the world, because it requires skill and ingenuity, and especially because it produces objects of beauty. A programmer who subconsciously views himself as an artist will enjoy what he does and will do it better. Therefore we can be glad that people who lecture at programming conferences talk not only about formulas and algorithms but also about the artistic elements of their craft. Some programs are elegant, some are exquisite, some are sparkling. My claim is that it is possible to write grand programs, noble programs, truly magnificent ones! Knuth's observation that programming can be viewed as an art form has profound implications for how we approach software development. When we treat code as a creative medium rather than merely a technical artifact, we open ourselves to new possibilities for expression and innovation. The best programmers understand that their work is not just about solving problems efficiently, but about crafting solutions that are beautiful in their simplicity and elegance. This perspective transforms programming from a mundane task into a fulfilling creative endeavor that challenges both our technical abilities and our aesthetic sensibilities. The journey to becoming a skilled programmer is much like the journey of any artist: it requires dedication, practice, continuous learning, and most importantly, a deep appreciation for the craft itself.",
+    language: "en",
+    difficulty: "hard",
+    isPublic: true,
+  },
   // Spanish tracks
   {
     name: "El Quijote",

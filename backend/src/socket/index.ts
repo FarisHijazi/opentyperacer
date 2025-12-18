@@ -162,10 +162,9 @@ export function setupSocketHandlers(io: Server) {
       const roomState = rooms.get(currentRoom);
       if (!roomState) return;
 
-      // Verify user is host or first player
-      const isHost = Array.from(roomState.players.values())[0]?.odefinitionUserId === currentUser.id;
-      if (!isHost) {
-        socket.emit('error', { message: 'Only the host can select tracks' });
+      // Any player can select tracks when waiting (fixes host reload bug)
+      if (roomState.status !== 'waiting') {
+        socket.emit('error', { message: 'Cannot change track during a race' });
         return;
       }
 
@@ -200,13 +199,7 @@ export function setupSocketHandlers(io: Server) {
       const roomState = rooms.get(currentRoom);
       if (!roomState || roomState.status !== 'waiting') return;
 
-      // Verify host
-      const isHost = Array.from(roomState.players.values())[0]?.odefinitionUserId === currentUser.id;
-      if (!isHost) {
-        socket.emit('error', { message: 'Only the host can start the race' });
-        return;
-      }
-
+      // Any player can start the race when waiting (fixes host reload bug)
       if (!roomState.trackText) {
         socket.emit('error', { message: 'Please select a track first' });
         return;
@@ -350,9 +343,8 @@ export function setupSocketHandlers(io: Server) {
         finishTime: player.finishTime,
       });
 
-      // Check if all players finished
-      const allFinished = Array.from(roomState.players.values()).every((p) => p.finished);
-      if (allFinished) {
+      // End race when first person finishes
+      if (roomState.finishedCount === 1) {
         await endRace(currentRoom, roomState, io);
       }
     });

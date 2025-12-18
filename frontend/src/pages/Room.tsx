@@ -163,15 +163,13 @@ export default function Room() {
     setShowTrackSelector(false);
   };
 
-  // Auto-select default track for host when joining
+  // Auto-select default track when first player joins and no track is selected
   useEffect(() => {
-    const hostUserId = game.players[0]?.odefinitionUserId;
-    const currentUserIsHost = hostUserId === user?.id;
-    if (currentUserIsHost && game.status === 'waiting' && !game.trackId && game.players.length > 0) {
+    if (game.status === 'waiting' && !game.trackId && game.players.length === 1) {
       // Select "The Art of Programming" as default track
       socket.emit('select-track', { trackId: 'the-art-of-programming' });
     }
-  }, [game.players, game.status, game.trackId, user?.id]);
+  }, [game.status, game.trackId, game.players.length]);
 
   const handleStartRace = () => {
     socket.emit('start-race');
@@ -188,7 +186,6 @@ export default function Room() {
     socket.emit('race-finished', { wpm, accuracy });
   }, []);
 
-  const isHost = game.players[0]?.odefinitionUserId === user?.id;
   const inviteUrl = `${window.location.origin}/room/${code}`;
 
   const copyInviteLink = () => {
@@ -230,7 +227,7 @@ export default function Room() {
                 >
                   Copy Invite Link
                 </button>
-                {isHost && game.status === 'waiting' && (
+                {game.status === 'waiting' && (
                   <>
                     <button
                       onClick={() => setShowTrackSelector(true)}
@@ -300,18 +297,8 @@ export default function Room() {
           <div className="max-w-4xl mx-auto">
             <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 text-center">
               <p className="text-gray-400 mb-4">
-                {isHost
-                  ? 'Select a track to start the race!'
-                  : 'Waiting for the host to select a track...'}
+                Select a track to start the race!
               </p>
-            </div>
-          </div>
-        )}
-
-        {game.status === 'waiting' && game.trackText && !isHost && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 text-center">
-              <p className="text-gray-400">Waiting for the host to start the race...</p>
             </div>
           </div>
         )}

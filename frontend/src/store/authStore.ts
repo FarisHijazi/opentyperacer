@@ -16,6 +16,7 @@ interface AuthState {
   loading: boolean;
   setUser: (user: User | null) => void;
   setToken: (token: string | null) => void;
+  setUsername: (username: string) => void;
   initGuest: () => Promise<void>;
   logout: () => void;
 }
@@ -29,6 +30,9 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user) => set({ user }),
       setToken: (token) => set({ token }),
+      setUsername: (username) => set((state) => ({
+        user: state.user ? { ...state.user, username } : null
+      })),
 
       initGuest: async () => {
         if (get().user) return;
